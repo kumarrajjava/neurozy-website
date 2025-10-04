@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neurozy AI - Advanced AI Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .neurozy-gradient {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .dark-glass {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .chat-container {
+            height: calc(100vh - 200px);
+            min-height: 500px;
+        }
+        
+        .message-bubble {
+            max-width: 80%;
+            word-wrap: break-word;
+            animation: fadeInUp 0.3s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .typing-indicator {
+            display: none;
+        }
+        
+        .typing-indicator.show {
+            display: flex;
+            animation: fadeInUp 0.3s ease-out;
+        }
+        
+        .typing-dots {
+            display: flex;
+            align-items: center;
+            space-x: 1;
+        }
+        
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #6b7280;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% {
+                transform: scale(0);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+        
+        .chat-input {
+            resize: none;
+            min-height: 50px;
+            max-height: 150px;
+        }
+        
+        .pulse-glow {
+            animation: pulseGlow 2s infinite;
+        }
+        
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(79, 70, 229, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(79, 70, 229, 0.8); }
+        }
+        
+        .hover-scale {
+            transition: transform 0.2s ease;
+        }
+        
+        .hover-scale:hover {
+            transform: scale(1.05);
+        }
+        
+        .code-block {
+            background: #1f2937;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 8px 0;
+            overflow-x: auto;
+        }
+        
+        .code-block code {
+            color: #e5e7eb;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .message-actions {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .message-bubble:hover .message-actions {
+            opacity: 1;
+        }
+        
+        .floating-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: float 6s infinite linear;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        .model-selector {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        
+        .conversation-item {
+            transition: all 0.3s ease;
+        }
+        
+        .conversation-item:hover {
+            background: rgba(6, 182, 212, 0.1);
+            transform: translateX(6px);
+            border-left: 3px solid #06b6d4;
+        }
+        
+        .conversation-item.active {
+            background: rgba(6, 182, 212, 0.2);
+            border-left: 4px solid #06b6d4;
+            box-shadow: 0 4px 20px rgba(6, 182, 212, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                z-index: 50;
+                height: 100vh;
+            }
+            
+            .chat-container {
+                height: calc(100vh - 160px);
+            }
+            
+            .message-bubble {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 font-sans min-h-screen">
+    <!-- Header -->
+    <header class="neurozy-gradient text-white py-4 px-6 shadow-lg relative overflow-hidden">
+        <div class="floating-particles">
+            <div class="particle" style="left: 10%; animation-delay: 0s;"></div>
+            <div class="particle" style="left: 20%; animation-delay: 1s;"></div>
+            <div class="particle" style="left: 30%; animation-delay: 2s;"></div>
+            <div class="particle" style="left: 40%; animation-delay: 3s;"></div>
+            <div class="particle" style="left: 50%; animation-delay: 4s;"></div>
+            <div class="particle" style="left: 60%; animation-delay: 5s;"></div>
+            <div class="particle" style="left: 70%; animation-delay: 0.5s;"></div>
+            <div class="particle" style="left: 80%; animation-delay: 1.5s;"></div>
+            <div class="particle" style="left: 90%; animation-delay: 2.5s;"></div>
+        </div>
+        
+        <div class="flex items-center justify-between relative z-10">
+            <div class="flex items-center space-x-4">
+                <button id="sidebarToggle" class="md:hidden text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-lg transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+                
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                        <span class="text-2xl">🧠</span>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">Neurozy AI</h1>
+                        <p class="text-sm opacity-90">Advanced AI Assistant</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <div class="model-selector hidden md:flex items-center space-x-2 px-4 py-2 rounded-lg">
+                    <span class="text-sm font-medium text-gray-700">Model:</span>
+                    <select id="modelSelector" class="bg-transparent border-none text-gray-700 font-medium focus:outline-none">
+                        <option value="neurozy-pro">Neurozy Pro</option>
+                        <option value="neurozy-creative">Neurozy Creative</option>
+                        <option value="neurozy-code">Neurozy Code</option>
+                        <option value="neurozy-fast">Neurozy Fast</option>
+                    </select>
+                </div>
+                
+                <button id="newChatBtn" class="glass-effect px-4 py-2 rounded-lg hover:bg-white hover:bg-opacity-20 transition-colors">
+                    <span class="text-sm font-medium">+ New Chat</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div id="sidebar" class="sidebar w-80 dark-glass shadow-2xl border-r border-white border-opacity-10 flex flex-col">
+            <div class="p-6 border-b border-white border-opacity-10">
+                <h2 class="text-lg font-semibold text-white mb-4">Chat History</h2>
+                <button id="newChatSidebar" class="w-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white py-3 px-4 rounded-xl font-medium hover:from-cyan-400 hover:to-purple-500 transition-all duration-300 shadow-lg hover:shadow-cyan-500/25">
+                    ✨ Start New Conversation
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-4">
+                <div id="conversationList" class="space-y-2">
+                    <div class="conversation-item active p-3 rounded-xl cursor-pointer bg-white bg-opacity-5 border border-white border-opacity-10" data-id="1">
+                        <h3 class="font-medium text-white text-sm truncate">Welcome to Neurozy AI</h3>
+                        <p class="text-xs text-gray-300 mt-1">Just now</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t border-white border-opacity-10">
+                <div class="space-y-3">
+                    <button class="w-full flex items-center space-x-3 p-3 text-gray-300 hover:bg-white hover:bg-opacity-10 rounded-xl transition-all duration-300 hover:text-white">
+                        <span class="text-xl">⚙️</span>
+                        <span class="text-sm font-medium">Settings</span>
+                    </button>
+                    <button class="w-full flex items-center space-x-3 p-3 text-gray-300 hover:bg-white hover:bg-opacity-10 rounded-xl transition-all duration-300 hover:text-white">
+                        <span class="text-xl">📊</span>
+                        <span class="text-sm font-medium">Usage & Billing</span>
+                    </button>
+                    <button class="w-full flex items-center space-x-3 p-3 text-gray-300 hover:bg-white hover:bg-opacity-10 rounded-xl transition-all duration-300 hover:text-white">
+                        <span class="text-xl">❓</span>
+                        <span class="text-sm font-medium">Help & Support</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="flex-1 flex flex-col">
+            <!-- Chat Messages -->
+            <div id="chatContainer" class="chat-container flex-1 overflow-y-auto p-6">
+                <div id="chatMessages" class="space-y-6 max-w-4xl mx-auto">
+                    <!-- Welcome Message -->
+                    <div class="message-bubble bg-gradient-to-br from-cyan-500 via-purple-600 to-pink-500 text-white p-8 rounded-3xl shadow-2xl border border-white border-opacity-20">
+                        <div class="flex items-start space-x-4">
+                            <div class="w-12 h-12 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                                <span class="text-2xl">🧠</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-2xl font-bold mb-3 bg-gradient-to-r from-white to-cyan-100 bg-clip-text text-transparent">Welcome to Neurozy AI! ✨</h3>
+                                <p class="opacity-95 mb-6 text-lg">I'm your advanced AI assistant, powered by cutting-edge neural networks. I can help you with:</p>
+                                <div class="grid md:grid-cols-2 gap-4 text-sm">
+                                    <div class="flex items-center space-x-3 bg-white bg-opacity-10 p-3 rounded-xl">
+                                        <span class="text-lg">💬</span>
+                                        <span>Natural conversations</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3 bg-white bg-opacity-10 p-3 rounded-xl">
+                                        <span class="text-lg">💻</span>
+                                        <span>Code generation & debugging</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3 bg-white bg-opacity-10 p-3 rounded-xl">
+                                        <span class="text-lg">✍️</span>
+                                        <span>Creative writing</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3 bg-white bg-opacity-10 p-3 rounded-xl">
+                                        <span class="text-lg">🔍</span>
+                                        <span>Research & analysis</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3 bg-white bg-opacity-10 p-3 rounded-xl">
+                                        <span class="text-lg">🎨</span>
+                                        <span>Creative projects</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3 bg-white bg-opacity-10 p-3 rounded-xl">
+                                        <span class="text-lg">📚</span>
+                                        <span>Learning & education</span>
+                                    </div>
+                                </div>
+                                <p class="mt-6 text-lg opacity-90 font-medium">What would you like to explore today? 🚀</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Typing Indicator -->
+                <div id="typingIndicator" class="typing-indicator max-w-4xl mx-auto mt-6">
+                    <div class="message-bubble dark-glass p-5 rounded-3xl shadow-2xl border border-white border-opacity-10 flex items-center space-x-4">
+                        <div class="w-10 h-10 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                            <span class="text-white text-lg">🧠</span>
+                        </div>
+                        <div class="typing-dots space-x-1">
+                            <div class="typing-dot bg-cyan-400"></div>
+                            <div class="typing-dot bg-purple-400"></div>
+                            <div class="typing-dot bg-pink-400"></div>
+                        </div>
+                        <span class="text-gray-300 text-sm font-medium">Neurozy is thinking...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="border-t border-white border-opacity-10 dark-glass p-6">
+                <div class="max-w-4xl mx-auto">
+                    <div class="flex items-end space-x-4">
+                        <div class="flex-1 relative">
+                            <textarea 
+                                id="messageInput" 
+                                class="chat-input w-full px-6 py-4 bg-white bg-opacity-10 border border-white border-opacity-20 rounded-2xl focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-30 resize-none text-white placeholder-gray-300 backdrop-blur-sm"
+                                placeholder="Type your message here... (Shift + Enter for new line)"
+                                rows="1"
+                            ></textarea>
+                            
+                            <div class="absolute right-4 bottom-4 flex items-center space-x-3">
+                                <button id="attachBtn" class="text-gray-300 hover:text-cyan-400 transition-colors p-1 rounded-lg hover:bg-white hover:bg-opacity-10">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                    </svg>
+                                </button>
+                                <button id="voiceBtn" class="text-gray-300 hover:text-purple-400 transition-colors p-1 rounded-lg hover:bg-white hover:bg-opacity-10">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <button 
+                            id="sendBtn" 
+                            class="bg-gradient-to-r from-cyan-500 to-purple-600 text-white p-4 rounded-2xl hover:from-cyan-400 hover:to-purple-500 transition-all duration-300 shadow-lg hover:shadow-cyan-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled
+                        >
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="flex items-center justify-between mt-4 text-xs text-gray-300">
+                        <div class="flex items-center space-x-4">
+                            <span>Press Enter to send, Shift + Enter for new line</span>
+                            <span id="charCount" class="text-cyan-400">0 / 4000</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                            <span class="text-green-400 font-medium">Neurozy AI Online</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentConversationId = 1;
+        let conversations = {
+            1: {
+                id: 1,
+                title: "Welcome to Neurozy AI",
+                messages: [],
+                timestamp: new Date()
+            }
+        };
+        let isTyping = false;
+
+        // DOM elements
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const newChatBtn = document.getElementById('newChatBtn');
+        const newChatSidebar = document.getElementById('newChatSidebar');
+        const conversationList = document.getElementById('conversationList');
+        const charCount = document.getElementById('charCount');
+        const modelSelector = document.getElementById('modelSelector');
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            updateSendButton();
+            autoResizeTextarea();
+        });
+
+        // Event listeners
+        function setupEventListeners() {
+            // Message input events
+            messageInput.addEventListener('input', function() {
+                updateSendButton();
+                updateCharCount();
+                autoResizeTextarea();
+            });
+
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // Send button
+            sendBtn.addEventListener('click', sendMessage);
+
+            // Sidebar toggle
+            sidebarToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('hidden');
+            });
+
+            // New chat buttons
+            newChatBtn.addEventListener('click', createNewChat);
+            newChatSidebar.addEventListener('click', createNewChat);
+
+            // Voice and attach buttons (placeholder functionality)
+            document.getElementById('voiceBtn').addEventListener('click', function() {
+                alert('Voice input feature coming soon! 🎤');
+            });
+
+            document.getElementById('attachBtn').addEventListener('click', function() {
+                alert('File attachment feature coming soon! 📎');
+            });
+
+            // Model selector
+            modelSelector.addEventListener('change', function() {
+                showNotification(`Switched to ${this.options[this.selectedIndex].text}`, 'success');
+            });
+        }
+
+        // Send message function
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || isTyping) return;
+
+            // Add user message
+            addMessage(message, 'user');
+            messageInput.value = '';
+            updateSendButton();
+            updateCharCount();
+            autoResizeTextarea();
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            // Simulate AI response
+            setTimeout(() => {
+                hideTypingIndicator();
+                generateAIResponse(message);
+            }, 1000 + Math.random() * 2000);
+        }
+
+        // Add message to chat
+        function addMessage(content, sender, isCode = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message-bubble ${sender === 'user' ? 'ml-auto bg-gradient-to-br from-cyan-500 to-purple-600 text-white shadow-2xl' : 'dark-glass border border-white border-opacity-10 shadow-2xl'} p-6 rounded-3xl`;
+
+            if (sender === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="flex items-start space-x-4 justify-end">
+                        <div class="text-right">
+                            <p class="whitespace-pre-wrap">${escapeHtml(content)}</p>
+                            <div class="message-actions mt-3 flex items-center justify-end space-x-3">
+                                <button class="text-white text-opacity-70 hover:text-opacity-100 text-xs bg-white bg-opacity-10 px-2 py-1 rounded-lg hover:bg-opacity-20 transition-all" onclick="editMessage(this)">✏️ Edit</button>
+                            </div>
+                        </div>
+                        <div class="w-10 h-10 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                            <span class="text-lg">👤</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="flex items-start space-x-4">
+                        <div class="w-10 h-10 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                            <span class="text-white text-lg">🧠</span>
+                        </div>
+                        <div class="flex-1">
+                            <div class="prose prose-sm max-w-none">
+                                ${isCode ? `<div class="code-block"><code>${escapeHtml(content)}</code></div>` : `<p class="text-white whitespace-pre-wrap">${formatMessage(content)}</p>`}
+                            </div>
+                            <div class="message-actions mt-3 flex items-center space-x-3">
+                                <button class="text-gray-300 hover:text-cyan-400 text-xs bg-white bg-opacity-5 px-3 py-1 rounded-lg hover:bg-opacity-10 transition-all" onclick="copyMessage(this)">📋 Copy</button>
+                                <button class="text-gray-300 hover:text-purple-400 text-xs bg-white bg-opacity-5 px-3 py-1 rounded-lg hover:bg-opacity-10 transition-all" onclick="regenerateResponse(this)">🔄 Regenerate</button>
+                                <button class="text-gray-300 hover:text-green-400 text-xs bg-white bg-opacity-5 px-2 py-1 rounded-lg hover:bg-opacity-10 transition-all" onclick="rateMessage(this, 'up')">👍</button>
+                                <button class="text-gray-300 hover:text-red-400 text-xs bg-white bg-opacity-5 px-2 py-1 rounded-lg hover:bg-opacity-10 transition-all" onclick="rateMessage(this, 'down')">👎</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+
+            // Save message to conversation
+            if (!conversations[currentConversationId].messages) {
+                conversations[currentConversationId].messages = [];
+            }
+            conversations[currentConversationId].messages.push({
+                content: content,
+                sender: sender,
+                timestamp: new Date()
+            });
+        }
+
+        // Generate AI response
+        function generateAIResponse(userMessage) {
+            const responses = [
+                "That's a great question! Let me help you with that. Based on what you've asked, I can provide several insights and suggestions that might be useful for your specific situation.",
+                
+                "I understand what you're looking for. Here's a comprehensive approach to address your query:\n\n1. First, let's consider the main aspects of your question\n2. Then we'll explore potential solutions\n3. Finally, I'll provide some actionable recommendations",
+                
+                "Excellent! I'd be happy to assist you with this. From my analysis, there are several key points to consider:\n\n• This is a common challenge many people face\n• There are proven strategies that work well\n• I can guide you through the best practices",
+                
+                "Thank you for that question! Let me break this down for you in a clear and structured way. This topic involves several important considerations that I'll walk you through step by step.",
+                
+                "I appreciate you bringing this up. Based on the latest information and best practices, here's what I recommend:\n\nThe key is to approach this systematically while keeping your specific goals in mind.",
+                
+                "That's an interesting perspective! Let me share some insights that might help:\n\n🔍 Analysis: Your question touches on several important areas\n💡 Solution: Here's a practical approach you can take\n🚀 Next Steps: I recommend starting with these actions"
+            ];
+
+            // Check if user is asking for code
+            if (userMessage.toLowerCase().includes('code') || userMessage.toLowerCase().includes('program') || userMessage.toLowerCase().includes('function')) {
+                const codeResponse = `// Here's a sample solution for your request
+function exampleFunction() {
+    console.log("Hello from Neurozy AI!");
+    return "This is a code example";
+}
+
+// You can modify this based on your specific needs
+const result = exampleFunction();`;
+                addMessage(codeResponse, 'ai', true);
+            } else {
+                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                addMessage(randomResponse, 'ai');
+            }
+
+            // Update conversation title if it's the first message
+            if (conversations[currentConversationId].messages.length === 2) {
+                const title = userMessage.length > 30 ? userMessage.substring(0, 30) + '...' : userMessage;
+                conversations[currentConversationId].title = title;
+                updateConversationList();
+            }
+        }
+
+        // Utility functions
+        function showTypingIndicator() {
+            isTyping = true;
+            typingIndicator.classList.add('show');
+            scrollToBottom();
+        }
+
+        function hideTypingIndicator() {
+            isTyping = false;
+            typingIndicator.classList.remove('show');
+        }
+
+        function scrollToBottom() {
+            setTimeout(() => {
+                const chatContainer = document.getElementById('chatContainer');
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 100);
+        }
+
+        function updateSendButton() {
+            const hasText = messageInput.value.trim().length > 0;
+            sendBtn.disabled = !hasText || isTyping;
+        }
+
+        function updateCharCount() {
+            const count = messageInput.value.length;
+            charCount.textContent = `${count} / 4000`;
+            charCount.style.color = count > 3500 ? '#ef4444' : '#6b7280';
+        }
+
+        function autoResizeTextarea() {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = Math.min(messageInput.scrollHeight, 150) + 'px';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatMessage(text) {
+            // Simple formatting for better readability
+            return text
+                .replace(/\n\n/g, '</p><p class="mt-4">')
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 rounded">$1</code>');
+        }
+
+        function createNewChat() {
+            const newId = Date.now();
+            conversations[newId] = {
+                id: newId,
+                title: "New Conversation",
+                messages: [],
+                timestamp: new Date()
+            };
+            
+            currentConversationId = newId;
+            clearChat();
+            updateConversationList();
+            
+            // Add welcome message for new chat
+            setTimeout(() => {
+                addMessage("Hello! I'm Neurozy AI, ready to help you with anything you need. What would you like to discuss today?", 'ai');
+            }, 500);
+        }
+
+        function clearChat() {
+            // Keep only the welcome message structure
+            chatMessages.innerHTML = '';
+        }
+
+        function updateConversationList() {
+            const sortedConversations = Object.values(conversations).sort((a, b) => b.timestamp - a.timestamp);
+            
+            conversationList.innerHTML = sortedConversations.map(conv => `
+                <div class="conversation-item ${conv.id === currentConversationId ? 'active' : ''} p-3 rounded-lg cursor-pointer" data-id="${conv.id}" onclick="switchConversation(${conv.id})">
+                    <h3 class="font-medium text-gray-800 text-sm truncate">${conv.title}</h3>
+                    <p class="text-xs text-gray-500 mt-1">${formatTime(conv.timestamp)}</p>
+                </div>
+            `).join('');
+        }
+
+        function switchConversation(id) {
+            currentConversationId = id;
+            loadConversation(id);
+            updateConversationList();
+        }
+
+        function loadConversation(id) {
+            const conversation = conversations[id];
+            clearChat();
+            
+            if (conversation.messages && conversation.messages.length > 0) {
+                conversation.messages.forEach(msg => {
+                    addMessage(msg.content, msg.sender);
+                });
+            }
+        }
+
+        function formatTime(date) {
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            
+            if (minutes < 1) return 'Just now';
+            if (minutes < 60) return `${minutes}m ago`;
+            if (hours < 24) return `${hours}h ago`;
+            return `${days}d ago`;
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${type === 'success' ? 'bg-green-500' : 'bg-blue-500'} text-white`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Message action functions
+        function copyMessage(btn) {
+            const messageText = btn.closest('.message-bubble').querySelector('p').textContent;
+            navigator.clipboard.writeText(messageText).then(() => {
+                showNotification('Message copied to clipboard!', 'success');
+            });
+        }
+
+        function regenerateResponse(btn) {
+            const messageDiv = btn.closest('.message-bubble');
+            const userMessages = conversations[currentConversationId].messages.filter(m => m.sender === 'user');
+            const lastUserMessage = userMessages[userMessages.length - 1];
+            
+            if (lastUserMessage) {
+                messageDiv.remove();
+                showTypingIndicator();
+                setTimeout(() => {
+                    hideTypingIndicator();
+                    generateAIResponse(lastUserMessage.content);
+                }, 1000);
+            }
+        }
+
+        function rateMessage(btn, rating) {
+            const icon = rating === 'up' ? '👍' : '👎';
+            btn.textContent = icon + ' Rated';
+            btn.disabled = true;
+            btn.classList.add('text-blue-600');
+            showNotification(`Thank you for your feedback! ${icon}`, 'success');
+        }
+
+        function editMessage(btn) {
+            const messageText = btn.closest('.message-bubble').querySelector('p').textContent;
+            messageInput.value = messageText;
+            messageInput.focus();
+            autoResizeTextarea();
+            updateSendButton();
+        }
+
+        // Mobile responsiveness
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                sidebar.classList.remove('hidden');
+            }
+        });
+
+        // Close sidebar on mobile when clicking outside
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth <= 768 && !sidebar.contains(e.target) && !sidebarToggle.contains(e.target)) {
+                sidebar.classList.add('hidden');
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9895ab3d941485b4',t:'MTc1OTU5MTI4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
